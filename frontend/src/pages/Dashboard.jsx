@@ -131,11 +131,11 @@ export default function Dashboard() {
       </div>
 
       {/* ── 4 Cards ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
 
         {/* Card 1 — Active Projects */}
-        <Link to="/works/projects" className="group">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-blue-800 p-6 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transition-all hover:-translate-y-0.5">
+        <Link to="/works/projects" className="group h-full">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-blue-800 p-6 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transition-all hover:-translate-y-0.5 h-full">
             {/* Background glow */}
             <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
             <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full" />
@@ -166,8 +166,8 @@ export default function Dashboard() {
         </Link>
 
         {/* Card 2 — Incoming Funds */}
-        <Link to="/finance/funds" className="group">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-6 shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300 transition-all hover:-translate-y-0.5">
+        <Link to="/finance/funds" className="group h-full">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-6 shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300 transition-all hover:-translate-y-0.5 h-full">
             <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
             <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full" />
 
@@ -200,8 +200,8 @@ export default function Dashboard() {
         </Link>
 
         {/* Card 3 — Financial Alerts (Salaries + Contractors) */}
-        <Link to="/finance/salaries" className="group">
-          <div className={`relative overflow-hidden rounded-3xl p-6 shadow-lg transition-all hover:-translate-y-0.5
+        <Link to="/finance/salaries" className="group h-full">
+          <div className={`relative overflow-hidden rounded-3xl p-6 shadow-lg transition-all hover:-translate-y-0.5 h-full
             ${hasFinanceAlert
               ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-200 hover:shadow-amber-300'
               : 'bg-gradient-to-br from-slate-600 to-slate-800 shadow-slate-200 hover:shadow-slate-300'
@@ -247,8 +247,8 @@ export default function Dashboard() {
         </Link>
 
         {/* Card 4 — Warehouse */}
-        <Link to="/warehouse" className="group">
-          <div className={`relative overflow-hidden rounded-3xl p-6 shadow-lg transition-all hover:-translate-y-0.5
+        <Link to="/warehouse" className="group h-full">
+          <div className={`relative overflow-hidden rounded-3xl p-6 shadow-lg transition-all hover:-translate-y-0.5 h-full
             ${hasWarehouseAlert
               ? 'bg-gradient-to-br from-red-500 to-rose-700 shadow-red-200 hover:shadow-red-300'
               : 'bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-indigo-200 hover:shadow-indigo-300'

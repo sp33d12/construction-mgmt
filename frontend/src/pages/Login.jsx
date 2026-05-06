@@ -48,7 +48,7 @@ export default function Login() {
                 value={form.username}
                 onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-400 transition-all"
-                placeholder="admin / pm / engineer"
+                placeholder={t(lang, 'username')}
                 required
               />
             </div>
@@ -77,13 +77,6 @@ export default function Login() {
               {loading ? '...' : t(lang, 'loginBtn')}
             </button>
           </form>
-
-          <div className="mt-6 p-4 bg-slate-50 rounded-xl text-xs text-slate-500 space-y-1">
-            <p className="font-semibold text-slate-600 mb-2">{lang === 'ar' ? 'المستخدمون الافتراضيون (كلمة المرور: admin123)' : 'Default users (password: admin123)'}</p>
-            <p>👔 admin — {t(lang, 'general_manager')}</p>
-            <p>📋 pm — {t(lang, 'project_manager')}</p>
-            <p>⛑️ engineer — {t(lang, 'field_engineer')}</p>
-          </div>
 
           <div className="text-center mt-4">
             <button onClick={toggle} className="text-slate-400 text-sm hover:text-slate-600 transition-colors">
