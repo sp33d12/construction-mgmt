@@ -144,3 +144,14 @@ INSERT INTO settings (key, value) VALUES ('usd_to_iqd', '1310') ON CONFLICT (key
 ALTER TABLE salaries            ADD COLUMN IF NOT EXISTS currency VARCHAR(3) DEFAULT 'IQD';
 ALTER TABLE incoming_funds      ADD COLUMN IF NOT EXISTS currency VARCHAR(3) DEFAULT 'IQD';
 ALTER TABLE external_contractors ADD COLUMN IF NOT EXISTS currency VARCHAR(3) DEFAULT 'IQD';
+
+-- File attachment columns for admin tables (safe to run multiple times)
+ALTER TABLE outgoing_letters ADD COLUMN IF NOT EXISTS file_data  TEXT;
+ALTER TABLE outgoing_letters ADD COLUMN IF NOT EXISTS file_name  VARCHAR(255);
+ALTER TABLE outgoing_letters ADD COLUMN IF NOT EXISTS file_type  VARCHAR(50);
+ALTER TABLE incoming_letters ADD COLUMN IF NOT EXISTS file_data  TEXT;
+ALTER TABLE incoming_letters ADD COLUMN IF NOT EXISTS file_name  VARCHAR(255);
+ALTER TABLE incoming_letters ADD COLUMN IF NOT EXISTS file_type  VARCHAR(50);
+ALTER TABLE admin_orders     ADD COLUMN IF NOT EXISTS file_data  TEXT;
+ALTER TABLE admin_orders     ADD COLUMN IF NOT EXISTS file_name  VARCHAR(255);
+ALTER TABLE admin_orders     ADD COLUMN IF NOT EXISTS file_type  VARCHAR(50);
