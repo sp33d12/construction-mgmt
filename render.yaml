@@ -3,7 +3,7 @@ services:
     name: construction-mgmt
     runtime: node
     plan: free
-    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && npm install
+    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
     startCommand: node backend/src/index.js
     envVars:
       - key: JWT_SECRET
