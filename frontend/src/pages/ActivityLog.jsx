@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useLang } from '../contexts/LangContext';
 import { t } from '../i18n';
@@ -9,15 +7,12 @@ const ACTION_ICONS = { create: '➕', update: '✏️', delete: '🗑️' };
 const ACTION_COLORS = { create: 'bg-emerald-100 text-emerald-700', update: 'bg-blue-100 text-blue-700', delete: 'bg-red-100 text-red-700' };
 
 export default function ActivityLog() {
-  const { isEngineer, user } = useAuth();
   const { lang } = useLang();
-  const navigate = useNavigate();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    if (!isEngineer) { navigate('/'); return; }
     api.get('/activity').then(r => { setLogs(r.data); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 

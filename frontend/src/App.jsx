@@ -16,6 +16,7 @@ import OutgoingLetters from './pages/administrative/OutgoingLetters';
 import IncomingLetters from './pages/administrative/IncomingLetters';
 import AdminOrders from './pages/administrative/AdminOrders';
 import ActivityLog from './pages/ActivityLog';
+import Overview from './pages/Overview';
 
 // Loads the project from API and provides it via context to nested routes
 function ProjectProvider() {
@@ -67,7 +68,8 @@ function AppRoutes() {
         </Route>
 
         {/* Global pages (not project-scoped) */}
-        <Route path="activity" element={<ActivityLog />} />
+        <Route path="overview"  element={<Overview />} />
+        <Route path="activity"  element={<ActivityLog />} />
       </Route>
     </Routes>
   );
