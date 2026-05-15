@@ -111,6 +111,23 @@ function NavContent({ onClose }) {
               </div>
             </div>
 
+            {/* Summary link */}
+            <NavLink
+              to={`/project/${project.id}`}
+              end
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all mb-3 ${
+                  isActive
+                    ? 'bg-blue-600 text-white font-semibold shadow-lg shadow-blue-900/40'
+                    : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                }`
+              }
+            >
+              <span className="text-base flex-shrink-0">📊</span>
+              <span className="truncate">{lang === 'ar' ? 'ملخص المشروع' : 'Summary'}</span>
+            </NavLink>
+
             {/* 4 sections — always expanded */}
             <div className="space-y-4">
               {PROJECT_NAV.map(group => {

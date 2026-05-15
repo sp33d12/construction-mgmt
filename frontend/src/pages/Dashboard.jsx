@@ -175,7 +175,7 @@ export default function Dashboard() {
           return (
             <div
               key={p.id}
-              onClick={() => navigate(`/project/${p.id}/reports`)}
+              onClick={() => navigate(`/project/${p.id}`)}
               className="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col"
             >
               {/* Stage color strip */}

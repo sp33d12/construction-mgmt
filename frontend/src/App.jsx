@@ -15,6 +15,7 @@ import OutgoingLetters from './pages/administrative/OutgoingLetters';
 import IncomingLetters from './pages/administrative/IncomingLetters';
 import AdminOrders from './pages/administrative/AdminOrders';
 import ActivityLog from './pages/ActivityLog';
+import ProjectSummary from './pages/ProjectSummary';
 
 /**
  * Wraps the entire Layout (sidebar + page) with project context.
@@ -72,7 +73,7 @@ function AppRoutes() {
 
         {/* Project-scoped pages — context already provided by ProjectAwareLayout */}
         <Route path="project/:projectId">
-          <Route index                  element={<Navigate to="reports" replace />} />
+          <Route index                  element={<ProjectSummary />} />
           <Route path="reports"         element={<Reports />} />
           <Route path="finance"         element={<Finance />} />
           <Route path="warehouse"       element={<Warehouse />} />
