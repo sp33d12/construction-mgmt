@@ -9,9 +9,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Overview from './pages/Overview';
 import Reports from './pages/works/Reports';
-import Salaries from './pages/finance/Salaries';
-import Funds from './pages/finance/Funds';
-import Contractors from './pages/finance/Contractors';
+import Finance from './pages/finance/Finance';
 import Warehouse from './pages/Warehouse';
 import OutgoingLetters from './pages/administrative/OutgoingLetters';
 import IncomingLetters from './pages/administrative/IncomingLetters';
@@ -76,9 +74,7 @@ function AppRoutes() {
         <Route path="project/:projectId">
           <Route index                  element={<Navigate to="reports" replace />} />
           <Route path="reports"         element={<Reports />} />
-          <Route path="salaries"        element={<Salaries />} />
-          <Route path="funds"           element={<Funds />} />
-          <Route path="contractors"     element={<Contractors />} />
+          <Route path="finance"         element={<Finance />} />
           <Route path="warehouse"       element={<Warehouse />} />
           <Route path="admin/outgoing"  element={<OutgoingLetters />} />
           <Route path="admin/incoming"  element={<IncomingLetters />} />

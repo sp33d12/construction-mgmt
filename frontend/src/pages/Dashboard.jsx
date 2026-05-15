@@ -18,18 +18,32 @@ const STAGE_META = {
   handover:   { ar:'التسليم',  en:'Handover',    fill:'#10b981', bg:'bg-emerald-100', text:'text-emerald-700' },
 };
 
+const STATUS_FILTERS = [
+  { id: 'all',       label: 'الكل',    icon: null  },
+  { id: 'active',    label: 'نشط',     icon: '🟢'  },
+  { id: 'completed', label: 'مكتمل',   icon: '✅'  },
+  { id: 'paused',    label: 'متوقف',   icon: '⏸'  },
+];
+
+const STATUS_DOT = {
+  active:    'bg-green-500',
+  completed: 'bg-emerald-500',
+  paused:    'bg-slate-400',
+};
+
 export default function Dashboard() {
   const { canEdit } = useAuth();
   const { lang } = useLang();
   const navigate = useNavigate();
 
-  const [projects,  setProjects]  = useState([]);
-  const [engineers, setEngineers] = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editItem,  setEditItem]  = useState(null);
-  const [form,      setForm]      = useState(DEFAULT);
-  const [search,    setSearch]    = useState('');
+  const [projects,     setProjects]     = useState([]);
+  const [engineers,    setEngineers]    = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [showModal,    setShowModal]    = useState(false);
+  const [editItem,     setEditItem]     = useState(null);
+  const [form,         setForm]         = useState(DEFAULT);
+  const [search,       setSearch]       = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const fetchAll = async () => {
     const [p, u] = await Promise.all([api.get('/projects'), api.get('/users')]);
@@ -57,23 +71,57 @@ export default function Dashboard() {
     setShowModal(false); fetchAll();
   };
 
-  const filtered = projects.filter(p =>
-    p.name_ar.includes(search) ||
-    p.name_en.toLowerCase().includes(search.toLowerCase()) ||
-    (p.location||'').includes(search)
-  );
+  // Compute stats from raw projects array
+  const totalCount     = projects.length;
+  const activeCount    = projects.filter(p => p.status === 'active').length;
+  const completedCount = projects.filter(p => p.status === 'completed').length;
+  const pausedCount    = projects.filter(p => p.status === 'paused').length;
+
+  // Apply search + status filter
+  const filtered = projects.filter(p => {
+    const matchSearch = (
+      p.name_ar.includes(search) ||
+      p.name_en.toLowerCase().includes(search.toLowerCase()) ||
+      (p.location||'').includes(search)
+    );
+    const matchStatus = statusFilter === 'all' || p.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
 
   if (loading) return <div className="text-center py-20 text-slate-400">{t(lang,'loading')}</div>;
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
 
-      {/* ── Header ──────────────────────────────────────────────── */}
+      {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-black text-slate-800">{t(lang,'projects')}</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-black text-slate-800">{t(lang,'projects')}</h1>
+            {/* Inline stat pills */}
+            <div className="flex gap-2 flex-wrap">
+              <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold border border-slate-200">
+                {totalCount} {lang === 'ar' ? 'إجمالي' : 'total'}
+              </span>
+              {activeCount > 0 && (
+                <span className="px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold border border-green-200">
+                  🟢 {activeCount} {lang === 'ar' ? 'نشط' : 'active'}
+                </span>
+              )}
+              {completedCount > 0 && (
+                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200">
+                  ✅ {completedCount} {lang === 'ar' ? 'مكتمل' : 'done'}
+                </span>
+              )}
+              {pausedCount > 0 && (
+                <span className="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold border border-slate-200">
+                  ⏸ {pausedCount} {lang === 'ar' ? 'متوقف' : 'paused'}
+                </span>
+              )}
+            </div>
+          </div>
           <p className="text-sm text-slate-400 mt-0.5">
-            {filtered.length} {lang==='ar' ? 'مشروع' : 'projects'}
+            {filtered.length} {lang === 'ar' ? 'مشروع معروض' : 'projects shown'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -101,10 +149,29 @@ export default function Dashboard() {
         </p>
       )}
 
-      {/* ── Projects grid ─────────────────────────────────────────── */}
+      {/* ── Status filter chips ─────────────────────────────────────── */}
+      <div className="flex gap-2 flex-wrap">
+        {STATUS_FILTERS.map(f => (
+          <button
+            key={f.id}
+            onClick={() => setStatusFilter(f.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all border ${
+              statusFilter === f.id
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/30'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+            }`}
+          >
+            {f.icon && <span>{f.icon}</span>}
+            <span>{lang === 'ar' ? f.label : (f.id === 'all' ? 'All' : f.id.charAt(0).toUpperCase() + f.id.slice(1))}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Projects grid ─────────────────────────────────────────────── */}
       <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {filtered.map(p => {
           const meta = STAGE_META[p.stage] || STAGE_META.planning;
+          const statusDot = STATUS_DOT[p.status] || 'bg-slate-400';
           return (
             <div
               key={p.id}
@@ -130,8 +197,22 @@ export default function Dashboard() {
 
                 {/* Location */}
                 {p.location && (
-                  <p className="text-slate-500 text-xs mb-3 flex items-center gap-1">
+                  <p className="text-slate-500 text-xs mb-2 flex items-center gap-1">
                     <span>📍</span> {p.location}
+                  </p>
+                )}
+
+                {/* Engineer name */}
+                {p.engineer_name_ar && (
+                  <p className="text-slate-500 text-xs mb-2 flex items-center gap-1">
+                    <span>👷</span> {p.engineer_name_ar}
+                  </p>
+                )}
+
+                {/* Start date */}
+                {p.start_date && (
+                  <p className="text-slate-400 text-xs mb-3 flex items-center gap-1">
+                    <span>📅</span> {p.start_date?.slice(0,10)}
                   </p>
                 )}
 
@@ -164,9 +245,13 @@ export default function Dashboard() {
 
               {/* Footer */}
               <div className="border-t border-slate-100 px-4 py-2.5 flex items-center justify-between bg-slate-50/60">
-                <span className="text-xs text-blue-600 font-semibold group-hover:underline">
-                  {lang==='ar' ? 'فتح المشروع ←' : 'Open Project →'}
-                </span>
+                <div className="flex items-center gap-2">
+                  {/* Status dot */}
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusDot}`} />
+                  <span className="text-xs text-blue-600 font-semibold group-hover:underline">
+                    {lang==='ar' ? 'فتح المشروع ←' : 'Open Project →'}
+                  </span>
+                </div>
                 {canEdit && (
                   <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                     <button onClick={e => openEdit(e,p)} className="p-1.5 rounded-lg text-slate-500 hover:bg-white hover:shadow-sm transition-all text-xs">✏️</button>
@@ -182,7 +267,7 @@ export default function Dashboard() {
           <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
             <span className="text-5xl">🏗</span>
             <p className="text-lg font-semibold">{t(lang,'noData')}</p>
-            {canEdit && (
+            {canEdit && statusFilter === 'all' && (
               <button onClick={openCreate} className="mt-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors">
                 + {lang==='ar' ? 'أضف أول مشروع' : 'Add First Project'}
               </button>

@@ -179,17 +179,198 @@ function StatusWidgets({ salaries, materials, activeProjects, lang }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Chart 4 — Project Progress bars
+// ─────────────────────────────────────────────────────────────────────────────
+function ProjectProgressBars({ projects, lang }) {
+  const shown = projects.slice(0, 6);
+
+  const barColor = pct => {
+    if (pct < 30) return '#ef4444';
+    if (pct < 70) return '#f59e0b';
+    return '#10b981';
+  };
+  const barBg = pct => {
+    if (pct < 30) return '#fee2e2';
+    if (pct < 70) return '#fef3c7';
+    return '#d1fae5';
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col h-full">
+      <div className="flex items-center gap-2 mb-5">
+        <span className="w-2 h-5 rounded-full bg-orange-500 block" />
+        <p className="text-sm font-bold text-slate-700">{lang === 'ar' ? 'تقدم المشاريع' : 'Project Progress'}</p>
+      </div>
+      <div className="flex-1 flex flex-col justify-center space-y-4">
+        {shown.length === 0 && (
+          <p className="text-xs text-slate-400 text-center py-4">{lang === 'ar' ? 'لا توجد مشاريع' : 'No projects'}</p>
+        )}
+        {shown.map(p => {
+          const pct = Number(p.progress || 0);
+          const color = barColor(pct);
+          const bg = barBg(pct);
+          return (
+            <div key={p.id}>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-xs text-slate-600 font-medium truncate max-w-[65%]">{p.name_ar}</span>
+                <span className="text-xs font-black ms-2 flex-shrink-0" style={{ color }}>{pct}%</span>
+              </div>
+              <div className="h-2.5 rounded-full overflow-hidden" style={{ background: bg }}>
+                <div
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${Math.max(pct, pct > 0 ? 3 : 0)}%`, background: color }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chart 5 — Budget vs Received funds donut
+// ─────────────────────────────────────────────────────────────────────────────
+function BudgetDonut({ projects, funds, lang }) {
+  const totalBudget   = projects.reduce((s, p) => s + Number(p.budget || 0), 0);
+  const totalReceived = (funds.receivedIQD || 0) + (funds.receivedUSD || 0) * 1310;
+  const remaining     = Math.max(totalBudget - totalReceived, 0);
+  const total         = Math.max(totalBudget, totalReceived, 1);
+
+  const receivedPct = Math.min((totalReceived / total) * 100, 100).toFixed(1);
+  const remainPct   = (100 - parseFloat(receivedPct)).toFixed(1);
+
+  const stops = totalBudget > 0
+    ? `#10b981 0% ${receivedPct}%, #e2e8f0 ${receivedPct}% 100%`
+    : '#e2e8f0 0% 100%';
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col h-full">
+      <div className="flex items-center gap-2 mb-5">
+        <span className="w-2 h-5 rounded-full bg-teal-500 block" />
+        <p className="text-sm font-bold text-slate-700">{lang === 'ar' ? 'توزيع الميزانية' : 'Budget Distribution'}</p>
+      </div>
+      <div className="flex items-center gap-6 flex-1">
+        {/* Donut */}
+        <div className="relative w-28 h-28 flex-shrink-0">
+          <div className="w-full h-full rounded-full" style={{ background: `conic-gradient(${stops})` }} />
+          <div className="absolute inset-[22px] bg-white rounded-full flex flex-col items-center justify-center shadow">
+            <span className="text-sm font-black text-slate-800 leading-none">{receivedPct}%</span>
+            <span className="text-[8px] text-slate-400 mt-0.5">{lang === 'ar' ? 'مستلم' : 'rcvd'}</span>
+          </div>
+        </div>
+        {/* Legend */}
+        <div className="flex-1 space-y-3 min-w-0">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
+              <span className="text-xs text-slate-500">{lang === 'ar' ? 'مستلم' : 'Received'}</span>
+            </div>
+            <p className="text-sm font-black text-slate-800 ps-4">{fmtMoney(totalReceived)} <span className="text-xs font-medium text-slate-400">د.ع</span></p>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-300 flex-shrink-0" />
+              <span className="text-xs text-slate-500">{lang === 'ar' ? 'المتبقي' : 'Remaining'}</span>
+            </div>
+            <p className="text-sm font-black text-slate-800 ps-4">{fmtMoney(remaining)} <span className="text-xs font-medium text-slate-400">د.ع</span></p>
+          </div>
+          <div className="pt-1 border-t border-slate-100">
+            <p className="text-xs text-slate-400">{lang === 'ar' ? 'إجمالي الميزانية' : 'Total Budget'}</p>
+            <p className="text-sm font-black text-blue-600">{fmtMoney(totalBudget)} <span className="text-xs font-medium text-slate-400">د.ع</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chart 6 — Salaries ring gauge
+// ─────────────────────────────────────────────────────────────────────────────
+function SalariesGauge({ salaries, lang }) {
+  const total    = (salaries.unpaidCount || 0) + (salaries.paidCount || 0);
+  const unpaid   = salaries.unpaidCount || 0;
+  const paid     = total - unpaid;
+  const paidPct  = total > 0 ? Math.round((paid / total) * 100) : 0;
+  const unpaidPct = 100 - paidPct;
+
+  const stops = total > 0
+    ? `#10b981 0% ${paidPct}%, #ef4444 ${paidPct}% 100%`
+    : '#e2e8f0 0% 100%';
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col h-full">
+      <div className="flex items-center gap-2 mb-5">
+        <span className="w-2 h-5 rounded-full bg-rose-500 block" />
+        <p className="text-sm font-bold text-slate-700">{lang === 'ar' ? 'الرواتب' : 'Salaries'}</p>
+      </div>
+      <div className="flex items-center gap-6 flex-1">
+        {/* Ring gauge */}
+        <div className="relative w-28 h-28 flex-shrink-0">
+          <div className="w-full h-full rounded-full" style={{ background: `conic-gradient(${stops})` }} />
+          <div className="absolute inset-[22px] bg-white rounded-full flex flex-col items-center justify-center shadow">
+            {total === 0 ? (
+              <span className="text-[10px] text-slate-400">{lang === 'ar' ? 'لا يوجد' : 'none'}</span>
+            ) : (
+              <>
+                <span className="text-lg font-black text-slate-800 leading-none">{paidPct}%</span>
+                <span className="text-[8px] text-slate-400 mt-0.5">{lang === 'ar' ? 'مدفوع' : 'paid'}</span>
+              </>
+            )}
+          </div>
+        </div>
+        {/* Stats */}
+        <div className="flex-1 space-y-3 min-w-0">
+          <div className="flex items-center gap-3 bg-emerald-50 rounded-xl px-3 py-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-slate-500">{lang === 'ar' ? 'مدفوع' : 'Paid'}</p>
+              <p className="text-lg font-black text-emerald-700 leading-none">{paid}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 bg-red-50 rounded-xl px-3 py-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0" />
+            <div>
+              <p className="text-xs text-slate-500">{lang === 'ar' ? 'غير مدفوع' : 'Unpaid'}</p>
+              <p className="text-lg font-black text-red-600 leading-none">{unpaid}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Unpaid IQD total if available */}
+      {salaries.unpaidIQD > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <p className="text-xs text-slate-400 mb-1">{lang === 'ar' ? 'إجمالي غير المدفوع' : 'Total unpaid'}</p>
+          <p className="text-base font-black text-red-600">
+            {fmtMoney(salaries.unpaidIQD)} <span className="text-xs font-medium text-slate-400">د.ع</span>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main Overview Page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Overview() {
   const { lang } = useLang();
-  const [stats, setStats]   = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [stats,    setStats]    = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
-    api.get('/dashboard')
-      .then(s => { setStats(s.data); setLoading(false); })
-      .catch(() => setLoading(false));
+    Promise.all([
+      api.get('/dashboard'),
+      api.get('/projects'),
+    ]).then(([statsRes, projectsRes]) => {
+      setStats(statsRes.data);
+      setProjects(projectsRes.data || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   const now = new Date().toLocaleDateString(lang === 'ar' ? 'ar-IQ' : 'en-US', {
@@ -242,11 +423,18 @@ export default function Overview() {
         </div>
       </div>
 
-      {/* ── 3 Charts ─────────────────────────────────────────────── */}
+      {/* ── Row 1: 3 existing charts ─────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
         <StagesDonut  byStage={stats.projectsByStage || []} lang={lang} />
         <FinanceBars  funds={stats.funds} contractors={stats.contractors} rate={rate} lang={lang} />
         <StatusWidgets salaries={stats.salaries} materials={stats.materials} activeProjects={stats.activeProjects} lang={lang} />
+      </div>
+
+      {/* ── Row 2: 3 new charts ──────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
+        <ProjectProgressBars projects={projects} lang={lang} />
+        <BudgetDonut projects={projects} funds={stats.funds} lang={lang} />
+        <SalariesGauge salaries={stats.salaries} lang={lang} />
       </div>
 
     </div>

@@ -13,11 +13,9 @@ const PROJECT_NAV = [
     ],
   },
   {
-    section: 'finance', icon: '💰',
+    section: 'finance', icon: '📑',
     items: [
-      { path: 'salaries',    label: 'salaries',      icon: '💰' },
-      { path: 'funds',       label: 'incomingFunds', icon: '📥' },
-      { path: 'contractors', label: 'contractors',   icon: '🔧' },
+      { path: 'finance', label: 'finance', icon: '📑' },
     ],
   },
   {
