@@ -54,8 +54,8 @@ export default function IncomingLetters() {
   const [search, setSearch] = useState('');
 
   const fetchData = async () => {
-    const qs = project?.id ?  : '';
-    const [l, p] = await Promise.all([api.get(), api.get('/projects')]);
+    const qs = project?.id ? `?project_id=${project.id}` : '';
+    const [l, p] = await Promise.all([api.get(`/admin/incoming${qs}`), api.get('/projects')]);
     setItems(l.data); setProjects(p.data); setLoading(false);
   };
   useEffect(() => { fetchData(); }, [project?.id]);

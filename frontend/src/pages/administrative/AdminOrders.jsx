@@ -54,8 +54,8 @@ export default function AdminOrders() {
   const [search, setSearch] = useState('');
 
   const fetchData = async () => {
-    const qs = project?.id ?  : '';
-    const [o, p] = await Promise.all([api.get(), api.get('/projects')]);
+    const qs = project?.id ? `?project_id=${project.id}` : '';
+    const [o, p] = await Promise.all([api.get(`/admin/orders${qs}`), api.get('/projects')]);
     setItems(o.data); setProjects(p.data); setLoading(false);
   };
   useEffect(() => { fetchData(); }, [project?.id]);

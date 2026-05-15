@@ -20,8 +20,8 @@ export default function Contractors() {
   const [form, setForm] = useState(DEFAULT);
 
   const fetch = async () => {
-    const qs = project?.id ?  : '';
-    const [c, p] = await Promise.all([api.get(), api.get('/projects')]);
+    const qs = project?.id ? `?project_id=${project.id}` : '';
+    const [c, p] = await Promise.all([api.get(`/finance/contractors${qs}`), api.get('/projects')]);
     setItems(c.data); setProjects(p.data); setLoading(false);
   };
   useEffect(() => { fetch(); }, [project?.id]);

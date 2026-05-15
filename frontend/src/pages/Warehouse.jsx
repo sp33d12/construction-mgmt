@@ -23,7 +23,8 @@ export default function Warehouse() {
   const [showLowOnly, setShowLowOnly] = useState(false);
 
   const fetch = async () => {
-    const [m, p] = await Promise.all([api.get('/warehouse'), api.get('/projects')]);
+    const qs = project?.id ? `?project_id=${project.id}` : '';
+    const [m, p] = await Promise.all([api.get(`/warehouse${qs}`), api.get('/projects')]);
     setItems(m.data); setProjects(p.data); setLoading(false);
   };
   useEffect(() => { fetch(); }, [project?.id]);
