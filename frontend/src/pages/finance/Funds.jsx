@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../contexts/LangContext';
+import { useProject } from '../../contexts/ProjectContext';
 import { t } from '../../i18n';
 import Modal from '../../components/Modal';
 
@@ -10,18 +11,20 @@ const DEFAULT = { source: '', amount: '', fund_date: '', project_id: '', status:
 export default function Funds() {
   const { canEdit } = useAuth();
   const { lang } = useLang();
+  const project = useProject();
   const [items, setItems] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState(DEFAULT);
+  const [form, setForm] = useState({ ...DEFAULT, project_id: project?.id || '' });
 
   const fetch = async () => {
-    const [f, p] = await Promise.all([api.get('/finance/funds'), api.get('/projects')]);
+    const qs = project?.id ? `?project_id=${project.id}` : '';
+    const [f, p] = await Promise.all([api.get(`/finance/funds${qs}`), api.get('/projects')]);
     setItems(f.data); setProjects(p.data); setLoading(false);
   };
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetch(); }, [project?.id]);
 
   const openCreate = () => { setEditItem(null); setForm(DEFAULT); setShowModal(true); };
   const openEdit = item => { setEditItem(item); setForm({ ...item, fund_date: item.fund_date?.slice(0,10)||'', project_id: item.project_id||'', amount: item.amount||'' }); setShowModal(true); };

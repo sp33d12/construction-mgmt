@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../contexts/LangContext';
+import { useProject } from '../../contexts/ProjectContext';
 import { t } from '../../i18n';
 import Modal from '../../components/Modal';
 
@@ -10,6 +11,7 @@ const DEFAULT = { contractor_name: '', job_description: '', project_id: '', amou
 export default function Contractors() {
   const { canEdit } = useAuth();
   const { lang } = useLang();
+  const project = useProject();
   const [items, setItems] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,10 +20,11 @@ export default function Contractors() {
   const [form, setForm] = useState(DEFAULT);
 
   const fetch = async () => {
-    const [c, p] = await Promise.all([api.get('/finance/contractors'), api.get('/projects')]);
+    const qs = project?.id ?  : '';
+    const [c, p] = await Promise.all([api.get(), api.get('/projects')]);
     setItems(c.data); setProjects(p.data); setLoading(false);
   };
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetch(); }, [project?.id]);
 
   const openCreate = () => { setEditItem(null); setForm(DEFAULT); setShowModal(true); };
   const openEdit = item => { setEditItem(item); setForm({ ...item, project_id: item.project_id||'', amount: item.amount||'', contract_date: item.contract_date?.slice(0,10)||'' }); setShowModal(true); };

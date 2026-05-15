@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../contexts/LangContext';
+import { useProject } from '../contexts/ProjectContext';
 import { t } from '../i18n';
 import Modal from '../components/Modal';
 
@@ -11,6 +12,7 @@ const UNITS_AR = ['كيس', 'طن', 'متر مكعب', 'قطعة', 'لتر', 'م
 export default function Warehouse() {
   const { canEdit } = useAuth();
   const { lang } = useLang();
+  const project = useProject();
   const [items, setItems] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export default function Warehouse() {
     const [m, p] = await Promise.all([api.get('/warehouse'), api.get('/projects')]);
     setItems(m.data); setProjects(p.data); setLoading(false);
   };
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetch(); }, [project?.id]);
 
   const openCreate = () => { setEditItem(null); setForm(DEFAULT); setShowModal(true); };
   const openEdit = item => { setEditItem(item); setForm({ ...item, project_id: item.project_id||'', unit_price: item.unit_price||'' }); setShowModal(true); };

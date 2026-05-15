@@ -7,13 +7,15 @@ router.use(authenticate);
 
 router.get('/', async (req, res) => {
   try {
+    const pid = req.query.project_id || null;
     const { rows } = await pool.query(`
       SELECT m.*, p.name_ar as project_name,
              (m.quantity <= m.min_quantity) as low_stock
       FROM materials m
       LEFT JOIN projects p ON m.project_id = p.id
+      WHERE ($1::integer IS NULL OR m.project_id = $1::integer)
       ORDER BY m.created_at DESC
-    `);
+    `, [pid]);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

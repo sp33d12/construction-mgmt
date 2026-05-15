@@ -8,11 +8,13 @@ router.use(authenticate);
 // ── Salaries ──────────────────────────────────────────────
 router.get('/salaries', async (req, res) => {
   try {
+    const pid = req.query.project_id || null;
     const { rows } = await pool.query(`
       SELECT s.*, p.name_ar as project_name FROM salaries s
       LEFT JOIN projects p ON s.project_id = p.id
+      WHERE ($1::integer IS NULL OR s.project_id = $1::integer)
       ORDER BY s.created_at DESC
-    `);
+    `, [pid]);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -56,11 +58,13 @@ router.delete('/salaries/:id', canEdit, async (req, res) => {
 // ── Incoming Funds ────────────────────────────────────────
 router.get('/funds', async (req, res) => {
   try {
+    const pid = req.query.project_id || null;
     const { rows } = await pool.query(`
       SELECT f.*, p.name_ar as project_name FROM incoming_funds f
       LEFT JOIN projects p ON f.project_id = p.id
+      WHERE ($1::integer IS NULL OR f.project_id = $1::integer)
       ORDER BY f.created_at DESC
-    `);
+    `, [pid]);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -101,11 +105,13 @@ router.delete('/funds/:id', canEdit, async (req, res) => {
 // ── External Contractors ──────────────────────────────────
 router.get('/contractors', async (req, res) => {
   try {
+    const pid = req.query.project_id || null;
     const { rows } = await pool.query(`
       SELECT c.*, p.name_ar as project_name FROM external_contractors c
       LEFT JOIN projects p ON c.project_id = p.id
+      WHERE ($1::integer IS NULL OR c.project_id = $1::integer)
       ORDER BY c.created_at DESC
-    `);
+    `, [pid]);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

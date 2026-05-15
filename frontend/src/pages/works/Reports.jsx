@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../contexts/LangContext';
+import { useProject } from '../../contexts/ProjectContext';
 import { t } from '../../i18n';
 import Modal from '../../components/Modal';
 import SignaturePad from '../../components/SignaturePad';
@@ -12,24 +13,26 @@ const DEFAULT = { project_id: '', report_date: new Date().toISOString().slice(0,
 export default function Reports() {
   const { canEdit } = useAuth();
   const { lang } = useLang();
+  const project = useProject();
   const [reports, setReports] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [viewReport, setViewReport] = useState(null);
   const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState(DEFAULT);
-  const [filterProject, setFilterProject] = useState('');
+  const [form, setForm] = useState({ ...DEFAULT, project_id: project?.id || '' });
+  const [filterProject, setFilterProject] = useState(project?.id || '');
 
   const fetch = async () => {
-    const params = filterProject ? `?project_id=${filterProject}` : '';
+    const pid = project?.id || filterProject;
+    const params = pid ? `?project_id=${pid}` : '';
     const [r, p] = await Promise.all([api.get(`/reports${params}`), api.get('/projects')]);
     setReports(r.data);
     setProjects(p.data);
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, [filterProject]);
+  useEffect(() => { fetch(); }, [filterProject, project?.id]);
 
   const openCreate = () => { setEditItem(null); setForm(DEFAULT); setShowModal(true); };
   const openEdit = item => {

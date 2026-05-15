@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../contexts/LangContext';
@@ -20,6 +21,7 @@ const STAGE_CLR = {
 export default function Dashboard() {
   const { canEdit } = useAuth();
   const { lang } = useLang();
+  const navigate = useNavigate();
 
   // Projects state
   const [projects, setProjects] = useState([]);
@@ -187,8 +189,8 @@ export default function Dashboard() {
             </div>
 
             <div className="border-t border-slate-100 px-4 py-3 flex gap-2">
-              <button onClick={() => openDetail(p)} className="flex-1 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium">
-                {lang==='ar'?'التفاصيل':'Details'}
+              <button onClick={() => navigate(`/project/${p.id}/reports`)} className="flex-1 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-semibold">
+                {lang==='ar'?'فتح المشروع':'Open Project'}
               </button>
               {canEdit && <>
                 <button onClick={() => openEdit(p)} className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">✏️</button>

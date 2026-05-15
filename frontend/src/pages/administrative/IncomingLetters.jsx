@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLang } from '../../contexts/LangContext';
+import { useProject } from '../../contexts/ProjectContext';
 import { t } from '../../i18n';
 import Modal from '../../components/Modal';
 
@@ -43,6 +44,7 @@ function downloadFile(file_data, file_name) {
 export default function IncomingLetters() {
   const { canEdit } = useAuth();
   const { lang } = useLang();
+  const project = useProject();
   const [items, setItems] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,10 +54,11 @@ export default function IncomingLetters() {
   const [search, setSearch] = useState('');
 
   const fetchData = async () => {
-    const [l, p] = await Promise.all([api.get('/admin/incoming'), api.get('/projects')]);
+    const qs = project?.id ?  : '';
+    const [l, p] = await Promise.all([api.get(), api.get('/projects')]);
     setItems(l.data); setProjects(p.data); setLoading(false);
   };
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [project?.id]);
 
   const openCreate = () => { setEditItem(null); setForm(DEFAULT); setShowModal(true); };
   const openEdit = item => {

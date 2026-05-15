@@ -8,10 +8,13 @@ router.use(authenticate);
 // ── Outgoing Letters ──────────────────────────────────────
 router.get('/outgoing', async (req, res) => {
   try {
+    const pid = req.query.project_id || null;
     const { rows } = await pool.query(`
       SELECT o.*, p.name_ar as project_name FROM outgoing_letters o
-      LEFT JOIN projects p ON o.project_id = p.id ORDER BY o.created_at DESC
-    `);
+      LEFT JOIN projects p ON o.project_id = p.id
+      WHERE ($1::integer IS NULL OR o.project_id = $1::integer)
+      ORDER BY o.created_at DESC
+    `, [pid]);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -54,10 +57,13 @@ router.delete('/outgoing/:id', canEdit, async (req, res) => {
 // ── Incoming Letters ──────────────────────────────────────
 router.get('/incoming', async (req, res) => {
   try {
+    const pid = req.query.project_id || null;
     const { rows } = await pool.query(`
       SELECT i.*, p.name_ar as project_name FROM incoming_letters i
-      LEFT JOIN projects p ON i.project_id = p.id ORDER BY i.created_at DESC
-    `);
+      LEFT JOIN projects p ON i.project_id = p.id
+      WHERE ($1::integer IS NULL OR i.project_id = $1::integer)
+      ORDER BY i.created_at DESC
+    `, [pid]);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -100,10 +106,13 @@ router.delete('/incoming/:id', canEdit, async (req, res) => {
 // ── Administrative Orders ─────────────────────────────────
 router.get('/orders', async (req, res) => {
   try {
+    const pid = req.query.project_id || null;
     const { rows } = await pool.query(`
       SELECT o.*, p.name_ar as project_name FROM admin_orders o
-      LEFT JOIN projects p ON o.project_id = p.id ORDER BY o.created_at DESC
-    `);
+      LEFT JOIN projects p ON o.project_id = p.id
+      WHERE ($1::integer IS NULL OR o.project_id = $1::integer)
+      ORDER BY o.created_at DESC
+    `, [pid]);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
