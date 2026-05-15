@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../contexts/LangContext';
 import { useProject } from '../contexts/ProjectContext';
@@ -68,6 +69,21 @@ function NavContent({ onClose }) {
   const { lang } = useLang();
   const project = useProject();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Track which accordion sections are open
+  const [openSections, setOpenSections] = useState(() => {
+    // Auto-open the section that matches the current URL
+    const path = location.pathname;
+    const initial = {};
+    PROJECT_NAV.forEach(g => {
+      initial[g.section] = g.items.some(i => path.includes(i.path));
+    });
+    return initial;
+  });
+
+  const toggleSection = section =>
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
 
   return (
     <div className="flex flex-col h-full bg-slate-900 w-64">
@@ -121,20 +137,56 @@ function NavContent({ onClose }) {
               </div>
             </div>
 
-            {PROJECT_NAV.map(group => (
-              <div key={group.section}>
-                <SectionLabel text={t(lang, group.section)} />
-                {group.items.map(item => (
-                  <SideLink
-                    key={item.path}
-                    to={`/project/${project.id}/${item.path}`}
-                    icon={item.icon}
-                    label={t(lang, item.label)}
-                    onClick={onClose}
-                  />
-                ))}
-              </div>
-            ))}
+            <div className="mt-2 space-y-1">
+              {PROJECT_NAV.map(group => {
+                const isOpen = openSections[group.section];
+                const hasActive = group.items.some(i =>
+                  location.pathname.includes(`/project/${project.id}/${i.path}`)
+                );
+                return (
+                  <div key={group.section} className="rounded-xl overflow-hidden">
+                    {/* Section accordion button */}
+                    <button
+                      onClick={() => toggleSection(group.section)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition-all rounded-xl ${
+                        hasActive
+                          ? 'bg-blue-600/20 text-blue-300'
+                          : 'text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className="text-base w-5 text-center flex-shrink-0">{group.icon}</span>
+                      <span className="flex-1 text-start">{t(lang, group.section)}</span>
+                      <span className={`text-[10px] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+                        ▾
+                      </span>
+                    </button>
+
+                    {/* Sub-items */}
+                    {isOpen && (
+                      <div className="mt-0.5 ms-3 ps-3 border-s border-slate-700/60 space-y-0.5 pb-1">
+                        {group.items.map(item => (
+                          <NavLink
+                            key={item.path}
+                            to={`/project/${project.id}/${item.path}`}
+                            onClick={onClose}
+                            className={({ isActive }) =>
+                              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-all ${
+                                isActive
+                                  ? 'bg-blue-600 text-white font-semibold shadow-md shadow-blue-900/30'
+                                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                              }`
+                            }
+                          >
+                            <span className="flex-shrink-0">{item.icon}</span>
+                            <span>{t(lang, item.label)}</span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Back to projects */}
             <div className="pt-3 px-1">
