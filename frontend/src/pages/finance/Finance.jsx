@@ -174,16 +174,25 @@ function SalariesTab({ project, projects, lang, canEdit }) {
               <input value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} className="input" />
             </Field>
             <Field label={t(lang, 'monthlySalary')}>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-0 rounded-xl border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/30">
                 <input
-                  type="number" min="0"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="any"
+                  placeholder="0"
                   value={form.monthly_salary}
-                  onChange={e => setForm(f => ({ ...f, monthly_salary: e.target.value }))}
-                  className="input flex-1"
+                  onChange={e => setForm(f => ({ ...f, monthly_salary: e.target.value.replace(/[^0-9.]/g, '') }))}
+                  onKeyDown={e => { if (!/[\d.\bArrowLeftArrowRightDeleteTab]/.test(e.key) && !e.ctrlKey && !e.metaKey) e.preventDefault(); }}
+                  className="flex-1 min-w-0 px-3 py-2.5 text-lg font-bold text-slate-800 bg-transparent outline-none placeholder:text-slate-300 placeholder:font-normal placeholder:text-base"
                 />
-                <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="input w-24">
-                  <option value="IQD">د.ع IQD</option>
-                  <option value="USD">$ USD</option>
+                <select
+                  value={form.currency}
+                  onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}
+                  className="h-full px-2 py-2.5 text-xs font-bold text-slate-500 bg-slate-50 border-s border-slate-200 outline-none cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <option value="IQD">د.ع</option>
+                  <option value="USD">$</option>
                 </select>
               </div>
             </Field>
@@ -340,17 +349,18 @@ function FundsTab({ project, projects, lang, canEdit }) {
               <input value={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value }))} className="input" required />
             </Field>
             <Field label={t(lang, 'amount')} required>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-0 rounded-xl border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/30">
                 <input
-                  type="number" min="0"
+                  type="number" inputMode="decimal" min="0" step="any" placeholder="0"
                   value={form.amount}
-                  onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                  className="input flex-1"
+                  onChange={e => setForm(f => ({ ...f, amount: e.target.value.replace(/[^0-9.]/g, '') }))}
+                  onKeyDown={e => { if (!/[\d.\bArrowLeftArrowRightDeleteTab]/.test(e.key) && !e.ctrlKey && !e.metaKey) e.preventDefault(); }}
+                  className="flex-1 min-w-0 px-3 py-2.5 text-lg font-bold text-slate-800 bg-transparent outline-none placeholder:text-slate-300 placeholder:font-normal placeholder:text-base"
                   required
                 />
-                <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="input w-24">
-                  <option value="IQD">د.ع IQD</option>
-                  <option value="USD">$ USD</option>
+                <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="h-full px-2 py-2.5 text-xs font-bold text-slate-500 bg-slate-50 border-s border-slate-200 outline-none cursor-pointer hover:bg-slate-100 transition-colors">
+                  <option value="IQD">د.ع</option>
+                  <option value="USD">$</option>
                 </select>
               </div>
             </Field>
@@ -505,16 +515,17 @@ function ContractorsTab({ project, projects, lang, canEdit }) {
               <input value={form.contractor_name} onChange={e => setForm(f => ({ ...f, contractor_name: e.target.value }))} className="input" required />
             </Field>
             <Field label={t(lang, 'amount')}>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-0 rounded-xl border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/30">
                 <input
-                  type="number" min="0"
+                  type="number" inputMode="decimal" min="0" step="any" placeholder="0"
                   value={form.amount}
-                  onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                  className="input flex-1"
+                  onChange={e => setForm(f => ({ ...f, amount: e.target.value.replace(/[^0-9.]/g, '') }))}
+                  onKeyDown={e => { if (!/[\d.\bArrowLeftArrowRightDeleteTab]/.test(e.key) && !e.ctrlKey && !e.metaKey) e.preventDefault(); }}
+                  className="flex-1 min-w-0 px-3 py-2.5 text-lg font-bold text-slate-800 bg-transparent outline-none placeholder:text-slate-300 placeholder:font-normal placeholder:text-base"
                 />
-                <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="input w-24">
-                  <option value="IQD">د.ع IQD</option>
-                  <option value="USD">$ USD</option>
+                <select value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))} className="h-full px-2 py-2.5 text-xs font-bold text-slate-500 bg-slate-50 border-s border-slate-200 outline-none cursor-pointer hover:bg-slate-100 transition-colors">
+                  <option value="IQD">د.ع</option>
+                  <option value="USD">$</option>
                 </select>
               </div>
             </Field>
