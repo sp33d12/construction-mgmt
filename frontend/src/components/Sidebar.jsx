@@ -5,19 +5,15 @@ import { t } from '../i18n';
 
 const NAV = [
   { to: '/', label: 'dashboard', icon: '⊞', exact: true },
-  { section: 'works' },
-  { to: '/works/projects',   label: 'projects',      icon: '🏗' },
-  { to: '/works/reports',    label: 'dailyReports',  icon: '📋' },
-  { section: 'finance' },
-  { to: '/finance/salaries',    label: 'salaries',      icon: '💰' },
-  { to: '/finance/funds',       label: 'incomingFunds', icon: '📥' },
-  { to: '/finance/contractors', label: 'contractors',   icon: '🔧' },
-  { section: 'warehouse' },
-  { to: '/warehouse', label: 'warehouse', icon: '🏭' },
-  { section: 'administrative' },
-  { to: '/admin/outgoing', label: 'outgoingLetters', icon: '📤' },
-  { to: '/admin/incoming', label: 'incomingLetters', icon: '📨' },
-  { to: '/admin/orders',   label: 'adminOrders',     icon: '📄' },
+  { to: '/works/projects',      label: 'projects',        icon: '🏗' },
+  { to: '/works/reports',       label: 'dailyReports',    icon: '📋' },
+  { to: '/finance/salaries',    label: 'salaries',        icon: '💰' },
+  { to: '/finance/funds',       label: 'incomingFunds',   icon: '📥' },
+  { to: '/finance/contractors', label: 'contractors',     icon: '🔧' },
+  { to: '/warehouse',           label: 'warehouse',       icon: '🏭' },
+  { to: '/admin/outgoing',      label: 'outgoingLetters', icon: '📤' },
+  { to: '/admin/incoming',      label: 'incomingLetters', icon: '📨' },
+  { to: '/admin/orders',        label: 'adminOrders',     icon: '📄' },
 ];
 
 function NavContent({ onClose }) {
