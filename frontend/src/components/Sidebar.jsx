@@ -6,10 +6,10 @@ import { t } from '../i18n';
 
 // Section accent colours
 const SECTION_STYLE = {
-  works:          { dot: 'bg-amber-400',   text: 'text-amber-400',   border: 'border-amber-400/30'  },
-  finance:        { dot: 'bg-emerald-400', text: 'text-emerald-400', border: 'border-emerald-400/30'},
-  warehouse:      { dot: 'bg-sky-400',     text: 'text-sky-400',     border: 'border-sky-400/30'    },
-  administrative: { dot: 'bg-purple-400',  text: 'text-purple-400',  border: 'border-purple-400/30' },
+  works:          { dot: 'bg-amber-400',   text: 'text-amber-300',   ring: 'ring-amber-400/20',   bg: 'bg-amber-400/8'   },
+  finance:        { dot: 'bg-emerald-400', text: 'text-emerald-300', ring: 'ring-emerald-400/20', bg: 'bg-emerald-400/8' },
+  warehouse:      { dot: 'bg-sky-400',     text: 'text-sky-300',     ring: 'ring-sky-400/20',     bg: 'bg-sky-400/8'     },
+  administrative: { dot: 'bg-purple-400',  text: 'text-purple-300',  ring: 'ring-purple-400/20',  bg: 'bg-purple-400/8'  },
 };
 
 const PROJECT_NAV = [
@@ -117,7 +117,7 @@ function NavContent({ onClose }) {
               end
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all mb-3 ${
+                `flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${
                   isActive
                     ? 'bg-blue-600 text-white font-semibold shadow-lg shadow-blue-900/40'
                     : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
@@ -128,32 +128,32 @@ function NavContent({ onClose }) {
               <span className="truncate">{lang === 'ar' ? 'ملخص المشروع' : 'Summary'}</span>
             </NavLink>
 
-            {/* 4 sections — always expanded */}
-            <div className="space-y-4">
+            {/* 4 sections — card style */}
+            <div className="space-y-1.5 pt-1">
               {PROJECT_NAV.map(group => {
                 const style = SECTION_STYLE[group.section];
                 return (
-                  <div key={group.section}>
+                  <div key={group.section} className={`rounded-xl ring-1 ${style.ring} overflow-hidden`}>
                     {/* Section header */}
-                    <div className="flex items-center gap-2 px-2 mb-1.5">
+                    <div className={`flex items-center gap-2 px-3 py-1.5 ${style.bg}`}>
                       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${style.dot}`} />
-                      <p className={`text-[10px] font-bold uppercase tracking-[0.13em] ${style.text}`}>
+                      <p className={`text-[10px] font-bold uppercase tracking-[0.12em] ${style.text}`}>
                         {t(lang, group.section)}
                       </p>
                     </div>
 
                     {/* Sub-links */}
-                    <div className={`ms-2 ps-3.5 border-s-2 ${style.border} space-y-0.5`}>
+                    <div className="p-1 space-y-0.5">
                       {group.items.map(item => (
                         <NavLink
                           key={item.path}
                           to={`/project/${project.id}/${item.path}`}
                           onClick={onClose}
                           className={({ isActive }) =>
-                            `flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all ${
+                            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
                               isActive
                                 ? 'bg-blue-600 text-white font-semibold shadow-md shadow-blue-900/30'
-                                : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                             }`
                           }
                         >
