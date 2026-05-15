@@ -21,12 +21,6 @@ function fmtMoney(v) {
   return String(Math.round(v));
 }
 
-const ACTION_META = {
-  create: { icon: '➕', bg: 'bg-emerald-100', text: 'text-emerald-700', label: { ar: 'أضاف', en: 'Added' } },
-  update: { icon: '✏️', bg: 'bg-blue-100',    text: 'text-blue-700',    label: { ar: 'عدّل', en: 'Updated' } },
-  delete: { icon: '🗑️', bg: 'bg-red-100',     text: 'text-red-700',     label: { ar: 'حذف', en: 'Deleted' } },
-};
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Chart 1 — Donut: Projects by Stage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -185,106 +179,17 @@ function StatusWidgets({ salaries, materials, activeProjects, lang }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Activity Timeline
-// ─────────────────────────────────────────────────────────────────────────────
-function ActivityTimeline({ logs, lang }) {
-  const [filter, setFilter] = useState('');
-  const filtered = logs.filter(l =>
-    !filter ||
-    (l.description || '').includes(filter) ||
-    (l.user_name   || '').includes(filter) ||
-    (l.entity_type || '').includes(filter)
-  );
-
-  const timeAgo = (dateStr) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    const hrs  = Math.floor(mins / 60);
-    const days = Math.floor(hrs  / 24);
-    if (lang === 'ar') {
-      if (days > 0) return `منذ ${days} يوم`;
-      if (hrs  > 0) return `منذ ${hrs} ساعة`;
-      return `منذ ${mins} دقيقة`;
-    } else {
-      if (days > 0) return `${days}d ago`;
-      if (hrs  > 0) return `${hrs}h ago`;
-      return `${mins}m ago`;
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-5 rounded-full bg-amber-500 block" />
-          <p className="text-sm font-bold text-slate-700">{lang === 'ar' ? 'سجل الأنشطة' : 'Activity Log'}</p>
-        </div>
-        <input
-          value={filter}
-          onChange={e => setFilter(e.target.value)}
-          placeholder={lang === 'ar' ? 'بحث في السجل...' : 'Search log...'}
-          className="w-48 sm:w-64 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30"
-        />
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 text-sm">
-          {lang === 'ar' ? 'لا توجد أنشطة' : 'No activity found'}
-        </div>
-      ) : (
-        <div className="relative">
-          {/* Timeline line */}
-          <div className="absolute top-0 bottom-0 start-[18px] w-px bg-slate-100" />
-          <div className="space-y-4">
-            {filtered.map((log, i) => {
-              const meta = ACTION_META[log.action] || ACTION_META.update;
-              return (
-                <div key={log.id} className="flex gap-4 items-start relative">
-                  {/* Icon dot */}
-                  <div className={`relative z-10 w-9 h-9 rounded-xl flex items-center justify-center text-sm flex-shrink-0 ${meta.bg} ${meta.text} shadow-sm`}>
-                    {meta.icon}
-                  </div>
-                  {/* Content */}
-                  <div className="flex-1 bg-slate-50/80 rounded-xl p-3 min-w-0 border border-slate-100">
-                    <p className="text-sm text-slate-700 font-medium leading-snug">
-                      {log.description || `${log.action} ${log.entity_type}`}
-                    </p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
-                      <span className="text-xs text-slate-400 flex items-center gap-1">👤 {log.user_name || '—'}</span>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${meta.bg} ${meta.text}`}>
-                        {meta.label[lang] || meta.label.ar}
-                      </span>
-                      <span className="text-xs text-slate-400 ms-auto">{timeAgo(log.created_at)}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Main Overview Page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Overview() {
   const { lang } = useLang();
   const [stats, setStats]   = useState(null);
-  const [logs,  setLogs]    = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.get('/dashboard').catch(() => ({ data: null })),
-      api.get('/activity').catch(() => ({ data: [] })),
-    ]).then(([s, a]) => {
-      setStats(s.data);
-      setLogs(a.data || []);
-      setLoading(false);
-    });
+    api.get('/dashboard')
+      .then(s => { setStats(s.data); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   const now = new Date().toLocaleDateString(lang === 'ar' ? 'ar-IQ' : 'en-US', {
@@ -343,9 +248,6 @@ export default function Overview() {
         <FinanceBars  funds={stats.funds} contractors={stats.contractors} rate={rate} lang={lang} />
         <StatusWidgets salaries={stats.salaries} materials={stats.materials} activeProjects={stats.activeProjects} lang={lang} />
       </div>
-
-      {/* ── Activity Timeline ────────────────────────────────────── */}
-      <ActivityTimeline logs={logs} lang={lang} />
 
     </div>
   );

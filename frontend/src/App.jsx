@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useParams, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useMatch, Outlet } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LangProvider } from './contexts/LangContext';
@@ -7,6 +7,7 @@ import api from './api/client';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Overview from './pages/Overview';
 import Reports from './pages/works/Reports';
 import Salaries from './pages/finance/Salaries';
 import Funds from './pages/finance/Funds';
@@ -16,11 +17,15 @@ import OutgoingLetters from './pages/administrative/OutgoingLetters';
 import IncomingLetters from './pages/administrative/IncomingLetters';
 import AdminOrders from './pages/administrative/AdminOrders';
 import ActivityLog from './pages/ActivityLog';
-import Overview from './pages/Overview';
 
-// Loads the project from API and provides it via context to nested routes
-function ProjectProvider() {
-  const { projectId } = useParams();
+/**
+ * Wraps the entire Layout (sidebar + page) with project context.
+ * Uses useMatch so BOTH the sidebar and the page content see the same project.
+ * This is placed inside BrowserRouter so useMatch works correctly.
+ */
+function ProjectAwareLayout() {
+  const match = useMatch('/project/:projectId/*');
+  const projectId = match?.params?.projectId;
   const [project, setProject] = useState(null);
 
   useEffect(() => {
@@ -28,12 +33,14 @@ function ProjectProvider() {
       api.get(`/projects/${projectId}`)
         .then(r => setProject(r.data))
         .catch(() => setProject(null));
+    } else {
+      setProject(null);
     }
   }, [projectId]);
 
   return (
     <ProjectContext.Provider value={project}>
-      <Outlet />
+      <Layout />
     </ProjectContext.Provider>
   );
 }
@@ -50,26 +57,33 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        {/* Dashboard — shows all projects */}
-        <Route index element={<Dashboard />} />
 
-        {/* Project-scoped routes — all pages filtered to one project */}
-        <Route path="project/:projectId" element={<ProjectProvider />}>
-          <Route index element={<Navigate to="reports" replace />} />
-          <Route path="reports"           element={<Reports />} />
-          <Route path="salaries"          element={<Salaries />} />
-          <Route path="funds"             element={<Funds />} />
-          <Route path="contractors"       element={<Contractors />} />
-          <Route path="warehouse"         element={<Warehouse />} />
-          <Route path="admin/outgoing"    element={<OutgoingLetters />} />
-          <Route path="admin/incoming"    element={<IncomingLetters />} />
-          <Route path="admin/orders"      element={<AdminOrders />} />
+      {/* All protected pages live inside ProjectAwareLayout */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <ProjectAwareLayout />
+          </ProtectedRoute>
+        }
+      >
+        {/* Global pages */}
+        <Route index          element={<Dashboard />} />
+        <Route path="overview" element={<Overview />} />
+        <Route path="activity" element={<ActivityLog />} />
+
+        {/* Project-scoped pages — context already provided by ProjectAwareLayout */}
+        <Route path="project/:projectId">
+          <Route index                  element={<Navigate to="reports" replace />} />
+          <Route path="reports"         element={<Reports />} />
+          <Route path="salaries"        element={<Salaries />} />
+          <Route path="funds"           element={<Funds />} />
+          <Route path="contractors"     element={<Contractors />} />
+          <Route path="warehouse"       element={<Warehouse />} />
+          <Route path="admin/outgoing"  element={<OutgoingLetters />} />
+          <Route path="admin/incoming"  element={<IncomingLetters />} />
+          <Route path="admin/orders"    element={<AdminOrders />} />
         </Route>
-
-        {/* Global pages (not project-scoped) */}
-        <Route path="overview"  element={<Overview />} />
-        <Route path="activity"  element={<ActivityLog />} />
       </Route>
     </Routes>
   );
