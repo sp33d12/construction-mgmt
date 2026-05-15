@@ -1,348 +1,299 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import api from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 import { useLang } from '../contexts/LangContext';
 import { t } from '../i18n';
+import Modal from '../components/Modal';
+import StageTracker from '../components/StageTracker';
 
-// ── Currency helpers ────────────────────────────────────────────────────────
-const DEFAULT_RATE = 1310;
+const STAGES = ['planning', 'foundation', 'structure', 'finishing', 'handover'];
+const DEFAULT = { name_ar: '', name_en: '', location: '', engineer_id: '', start_date: '', budget: '', progress: 0, stage: 'planning', status: 'active' };
 
-function getRate() {
-  return parseFloat(localStorage.getItem('exchangeRate') || String(DEFAULT_RATE));
-}
-
-function fmtIQD(n) {
-  if (!n && n !== 0) return '—';
-  return Math.round(n).toLocaleString('ar-IQ') + ' د.ع';
-}
-function fmtUSD(n) {
-  if (!n && n !== 0) return '—';
-  return '$' + Math.round(n).toLocaleString('en-US');
-}
-// Convert to IQD equivalent using local rate
-function toIQD(iqd, usd, rate) { return iqd + usd * rate; }
-function toUSD(iqd, usd, rate) { return usd + iqd / rate; }
-
-// ── Activity icons ───────────────────────────────────────────────────────────
-const A_ICON  = { create: '➕', update: '✏️', delete: '🗑️' };
-const A_COLOR = { create: 'text-emerald-600 bg-emerald-50', update: 'text-blue-600 bg-blue-50', delete: 'text-red-500 bg-red-50' };
-
-// ── Stage colours ────────────────────────────────────────────────────────────
 const STAGE_CLR = {
-  planning:   'bg-slate-400',
-  foundation: 'bg-amber-400',
-  structure:  'bg-blue-500',
-  finishing:  'bg-purple-500',
-  handover:   'bg-emerald-500',
+  planning: 'bg-slate-100 text-slate-600',
+  foundation: 'bg-amber-100 text-amber-700',
+  structure: 'bg-blue-100 text-blue-700',
+  finishing: 'bg-purple-100 text-purple-700',
+  handover: 'bg-emerald-100 text-emerald-700',
 };
 
-// ── Dual currency display ────────────────────────────────────────────────────
-function CurrencyPair({ iqd, usd, rate, size = 'md' }) {
-  const totalIQD = toIQD(iqd, usd, rate);
-  const totalUSD = toUSD(iqd, usd, rate);
-  const big = size === 'lg' ? 'text-3xl' : 'text-xl';
-  return (
-    <div>
-      <p className={`font-black ${big} text-white leading-tight`}>{fmtIQD(totalIQD)}</p>
-      <p className="text-white/70 text-sm mt-0.5 font-medium">≈ {fmtUSD(totalUSD)}</p>
-    </div>
-  );
-}
-
-// ── Main component ────────────────────────────────────────────────────────────
 export default function Dashboard() {
+  const { canEdit } = useAuth();
   const { lang } = useLang();
-  const [stats, setStats]   = useState(null);
+
+  // Projects state
+  const [projects, setProjects] = useState([]);
+  const [engineers, setEngineers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [rate, setRate]     = useState(getRate);
-  const [editRate, setEditRate] = useState(false);
-  const [rateInput, setRateInput] = useState(String(getRate()));
+  const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState(DEFAULT);
+  const [detailProject, setDetailProject] = useState(null);
+  const [newTask, setNewTask] = useState('');
+  const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    api.get('/dashboard')
-      .then(r => { setStats(r.data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
+  // Stats state
+  const [stats, setStats] = useState(null);
 
-  function saveRate() {
-    const v = parseFloat(rateInput);
-    if (!isNaN(v) && v > 0) {
-      localStorage.setItem('exchangeRate', String(v));
-      setRate(v);
-      api.put('/dashboard/exchange-rate', { rate: v }).catch(() => {});
-    }
-    setEditRate(false);
-  }
+  const fetchAll = async () => {
+    const [p, u, s] = await Promise.all([
+      api.get('/projects'),
+      api.get('/users'),
+      api.get('/dashboard').catch(() => ({ data: null })),
+    ]);
+    setProjects(p.data);
+    setEngineers(u.data);
+    setStats(s.data);
+    setLoading(false);
+  };
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-64 text-slate-400 text-lg">
-      {t(lang, 'loading')}
-    </div>
+  useEffect(() => { fetchAll(); }, []);
+
+  const openCreate = () => { setEditItem(null); setForm(DEFAULT); setShowModal(true); };
+  const openEdit = item => {
+    setEditItem(item);
+    setForm({ ...item, engineer_id: item.engineer_id||'', budget: item.budget||'', start_date: item.start_date?.slice(0,10)||'' });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    const data = { ...form, engineer_id: form.engineer_id||null, budget: form.budget||null, start_date: form.start_date||null };
+    if (editItem) await api.put(`/projects/${editItem.id}`, data);
+    else await api.post('/projects', data);
+    setShowModal(false); fetchAll();
+  };
+
+  const handleDelete = async id => {
+    if (!confirm(t(lang, 'confirmDelete'))) return;
+    await api.delete(`/projects/${id}`); fetchAll();
+  };
+
+  const openDetail = async p => {
+    const { data } = await api.get(`/projects/${p.id}`);
+    setDetailProject(data);
+  };
+
+  const addTask = async () => {
+    if (!newTask.trim()) return;
+    await api.post(`/projects/${detailProject.id}/tasks`, { task_name: newTask });
+    setNewTask('');
+    const { data } = await api.get(`/projects/${detailProject.id}`);
+    setDetailProject(data);
+  };
+
+  const toggleTask = async task => {
+    await api.put(`/projects/${detailProject.id}/tasks/${task.id}`, { completed: !task.completed });
+    const { data } = await api.get(`/projects/${detailProject.id}`);
+    setDetailProject(data);
+  };
+
+  const deleteTask = async taskId => {
+    await api.delete(`/projects/${detailProject.id}/tasks/${taskId}`);
+    const { data } = await api.get(`/projects/${detailProject.id}`);
+    setDetailProject(data);
+  };
+
+  const filtered = projects.filter(p =>
+    p.name_ar.includes(search) || p.name_en.toLowerCase().includes(search.toLowerCase()) || (p.location||'').includes(search)
   );
-  if (!stats) return null;
 
-  const { funds, salaries, contractors, materials, recentActivity, projectsByStage, activeProjects } = stats;
+  if (loading) return <div className="text-center py-20 text-slate-400">{t(lang, 'loading')}</div>;
 
-  // Totals across IQD + USD using the current rate
-  const totalReceivedIQD = toIQD(funds.receivedIQD, funds.receivedUSD, rate);
-  const totalPendingIQD  = toIQD(funds.pendingIQD,  funds.pendingUSD,  rate);
-  const totalUnpaidIQD   = toIQD(salaries.unpaidIQD, salaries.unpaidUSD, rate);
-  const totalContractorsIQD = toIQD(contractors.pendingIQD, contractors.pendingUSD, rate);
-
-  const hasFinanceAlert = salaries.unpaidCount > 0 || totalPendingIQD > 0;
-  const hasWarehouseAlert = materials.lowStock > 0;
+  const rate = parseFloat(localStorage.getItem('exchangeRate') || '1310');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 max-w-7xl mx-auto">
 
-      {/* ── Exchange rate bar ─────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between bg-white rounded-2xl px-5 py-3 shadow-sm border border-slate-100">
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <span>💱</span>
-          <span>{lang === 'ar' ? 'سعر صرف الدولار' : 'USD Exchange Rate'}</span>
-          <span className="font-bold text-slate-700">1 USD =</span>
+      {/* ── Compact stats bar ─────────────────────────────────── */}
+      {stats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard
+            icon="🏗" color="blue"
+            label={lang==='ar'?'مشاريع نشطة':'Active Projects'}
+            value={stats.activeProjects}
+          />
+          <StatCard
+            icon="💵" color="emerald"
+            label={lang==='ar'?'الأموال الواردة':'Received Funds'}
+            value={`${Math.round(stats.funds.receivedIQD + stats.funds.receivedUSD * rate).toLocaleString('ar-IQ')} د.ع`}
+          />
+          <StatCard
+            icon={stats.salaries?.unpaidCount > 0 ? '⚠️' : '✅'} color={stats.salaries?.unpaidCount > 0 ? 'amber' : 'slate'}
+            label={lang==='ar'?'رواتب غير مدفوعة':'Unpaid Salaries'}
+            value={stats.salaries?.unpaidCount || 0}
+          />
+          <StatCard
+            icon={stats.materials?.lowStock > 0 ? '⚠️' : '🏭'} color={stats.materials?.lowStock > 0 ? 'red' : 'indigo'}
+            label={lang==='ar'?'مواد المخزن':'Warehouse Items'}
+            value={stats.materials?.total || 0}
+          />
         </div>
-        {editRate ? (
-          <div className="flex items-center gap-2">
-            <input
-              autoFocus
-              type="number"
-              value={rateInput}
-              onChange={e => setRateInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveRate(); if (e.key === 'Escape') setEditRate(false); }}
-              className="w-28 px-3 py-1.5 rounded-lg border-2 border-blue-400 text-sm font-bold text-center"
-            />
-            <button onClick={saveRate} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
-              {lang === 'ar' ? 'حفظ' : 'Save'}
+      )}
+
+      {/* ── Projects header ───────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="flex-1">
+          <h1 className="text-xl font-black text-slate-800">{t(lang, 'projects')}</h1>
+          <p className="text-sm text-slate-400">{filtered.length} {lang==='ar'?'مشروع':'projects'}</p>
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t(lang,'search')}
+            className="flex-1 sm:w-56 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm" />
+          {canEdit && (
+            <button onClick={openCreate} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm whitespace-nowrap">
+              <span>+</span> {t(lang,'add')}
             </button>
-            <button onClick={() => setEditRate(false)} className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200 transition-colors">
-              {lang === 'ar' ? 'إلغاء' : 'Cancel'}
-            </button>
+          )}
+        </div>
+      </div>
+
+      {!canEdit && <p className="text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm">{t(lang,'viewOnly')}</p>}
+
+      {/* ── Projects grid ─────────────────────────────────────── */}
+      <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filtered.map(p => (
+          <div key={p.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow">
+            <div className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-slate-800 truncate text-base">{p.name_ar}</h3>
+                  <p className="text-slate-400 text-xs truncate">{p.name_en}</p>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ms-2 flex-shrink-0 ${STAGE_CLR[p.stage]}`}>
+                  {t(lang, `stages.${p.stage}`)}
+                </span>
+              </div>
+
+              {p.location && <p className="text-slate-500 text-sm mb-3">📍 {p.location}</p>}
+
+              <div className="mb-3">
+                <div className="flex justify-between text-xs text-slate-500 mb-1">
+                  <span>{t(lang, 'progress')}</span>
+                  <span className="font-bold text-blue-600">{p.progress}%</span>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${p.progress}%` }} />
+                </div>
+              </div>
+
+              <div className="mb-3"><StageTracker stage={p.stage} /></div>
+
+              {p.budget && (
+                <p className="text-sm text-slate-500">
+                  💰 {Number(p.budget).toLocaleString('ar-IQ')} {t(lang, 'currency')}
+                </p>
+              )}
+            </div>
+
+            <div className="border-t border-slate-100 px-4 py-3 flex gap-2">
+              <button onClick={() => openDetail(p)} className="flex-1 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium">
+                {lang==='ar'?'التفاصيل':'Details'}
+              </button>
+              {canEdit && <>
+                <button onClick={() => openEdit(p)} className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">✏️</button>
+                <button onClick={() => handleDelete(p.id)} className="px-3 py-1.5 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors">🗑️</button>
+              </>}
+            </div>
           </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <span className="font-black text-lg text-slate-800">{rate.toLocaleString()} <span className="text-slate-500 text-sm font-medium">د.ع</span></span>
-            <button onClick={() => { setRateInput(String(rate)); setEditRate(true); }}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition-colors">
-              ✏️ {lang === 'ar' ? 'تعديل' : 'Edit'}
-            </button>
-          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="col-span-full text-center py-20 text-slate-400 text-lg">{t(lang,'noData')}</div>
         )}
       </div>
 
-      {/* ── 4 Cards ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
-
-        {/* Card 1 — Active Projects */}
-        <Link to="/works/projects" className="group h-full">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-blue-800 p-6 shadow-lg shadow-blue-200 hover:shadow-xl hover:shadow-blue-300 transition-all hover:-translate-y-0.5 h-full">
-            {/* Background glow */}
-            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
-            <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full" />
-
-            <div className="relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl">🏗</div>
-                <span className="text-blue-200 text-xs font-medium bg-white/10 px-2 py-1 rounded-full">
-                  {lang === 'ar' ? 'مشاريع' : 'Projects'}
-                </span>
-              </div>
-              <p className="text-5xl font-black text-white mb-1">{activeProjects}</p>
-              <p className="text-blue-200 font-medium">{lang === 'ar' ? 'مشروع نشط' : 'Active Projects'}</p>
-
-              {/* Stage dots */}
-              {projectsByStage.length > 0 && (
-                <div className="flex gap-2 mt-4 flex-wrap">
-                  {projectsByStage.map(s => (
-                    <div key={s.stage} className="flex items-center gap-1.5 bg-white/15 rounded-full px-2.5 py-1">
-                      <div className={`w-2 h-2 rounded-full ${STAGE_CLR[s.stage] || 'bg-white'}`} />
-                      <span className="text-white/90 text-xs font-medium">{t(lang, `stages.${s.stage}`)}: {s.count}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+      {/* ── Create/Edit Modal ─────────────────────────────────── */}
+      <Modal open={showModal} onClose={() => setShowModal(false)} title={editItem ? t(lang,'edit') : t(lang,'add')} size="lg">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label={t(lang,'projectNameAr')} required><input value={form.name_ar} onChange={e=>setForm(f=>({...f,name_ar:e.target.value}))} className="input" required /></Field>
+            <Field label={t(lang,'projectNameEn')} required><input value={form.name_en} onChange={e=>setForm(f=>({...f,name_en:e.target.value}))} className="input" required /></Field>
+            <Field label={t(lang,'location')}><input value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} className="input" /></Field>
+            <Field label={t(lang,'startDate')}><input type="date" value={form.start_date} onChange={e=>setForm(f=>({...f,start_date:e.target.value}))} className="input" /></Field>
+            <Field label={t(lang,'budget')}><input type="number" value={form.budget} onChange={e=>setForm(f=>({...f,budget:e.target.value}))} className="input" min="0" /></Field>
+            <Field label={t(lang,'progress')+' (%)'}><input type="number" value={form.progress} onChange={e=>setForm(f=>({...f,progress:e.target.value}))} className="input" min="0" max="100" /></Field>
+            <Field label={t(lang,'stage')}>
+              <select value={form.stage} onChange={e=>setForm(f=>({...f,stage:e.target.value}))} className="input">
+                {STAGES.map(s=><option key={s} value={s}>{t(lang,`stages.${s}`)}</option>)}
+              </select>
+            </Field>
+            <Field label={t(lang,'engineer')}>
+              <select value={form.engineer_id} onChange={e=>setForm(f=>({...f,engineer_id:e.target.value}))} className="input">
+                <option value="">— {lang==='ar'?'اختر':'Select'} —</option>
+                {engineers.map(u=><option key={u.id} value={u.id}>{u.full_name_ar||u.full_name}</option>)}
+              </select>
+            </Field>
+            <Field label={t(lang,'status')}>
+              <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="input">
+                <option value="active">{lang==='ar'?'نشط':'Active'}</option>
+                <option value="completed">{lang==='ar'?'مكتمل':'Completed'}</option>
+                <option value="paused">{lang==='ar'?'متوقف':'Paused'}</option>
+              </select>
+            </Field>
           </div>
-        </Link>
-
-        {/* Card 2 — Incoming Funds */}
-        <Link to="/finance/funds" className="group h-full">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-6 shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300 transition-all hover:-translate-y-0.5 h-full">
-            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
-            <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full" />
-
-            <div className="relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl">💵</div>
-                <span className="text-emerald-100 text-xs font-medium bg-white/10 px-2 py-1 rounded-full">
-                  {lang === 'ar' ? 'وارد' : 'Funds'}
-                </span>
-              </div>
-
-              {/* Received total */}
-              <p className="text-white/80 text-xs font-semibold uppercase tracking-wide mb-1">
-                {lang === 'ar' ? 'المستلم' : 'Received'}
-              </p>
-              <CurrencyPair iqd={funds.receivedIQD} usd={funds.receivedUSD} rate={rate} size="lg" />
-
-              {/* Pending row */}
-              {totalPendingIQD > 0 && (
-                <div className="mt-3 pt-3 border-t border-white/20">
-                  <p className="text-white/70 text-xs">
-                    {lang === 'ar' ? 'قيد الاستلام: ' : 'Pending: '}
-                    <span className="font-bold text-white">{fmtIQD(totalPendingIQD)}</span>
-                    <span className="text-white/60"> ≈ {fmtUSD(totalPendingIQD / rate)}</span>
-                  </p>
-                </div>
-              )}
-            </div>
+          <div className="flex gap-3 pt-2">
+            <button type="submit" className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold">{t(lang,'save')}</button>
+            <button type="button" onClick={()=>setShowModal(false)} className="px-6 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-semibold">{t(lang,'cancel')}</button>
           </div>
-        </Link>
+        </form>
+      </Modal>
 
-        {/* Card 3 — Financial Alerts (Salaries + Contractors) */}
-        <Link to="/finance/salaries" className="group h-full">
-          <div className={`relative overflow-hidden rounded-3xl p-6 shadow-lg transition-all hover:-translate-y-0.5 h-full
-            ${hasFinanceAlert
-              ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-200 hover:shadow-amber-300'
-              : 'bg-gradient-to-br from-slate-600 to-slate-800 shadow-slate-200 hover:shadow-slate-300'
-            }`}>
-            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
-            <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full" />
-
-            <div className="relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl">
-                  {hasFinanceAlert ? '⚠️' : '✅'}
-                </div>
-                <span className="text-white/80 text-xs font-medium bg-white/10 px-2 py-1 rounded-full">
-                  {lang === 'ar' ? 'المدفوعات' : 'Payments'}
-                </span>
-              </div>
-
-              {/* Unpaid salaries */}
-              <div className="mb-3">
-                <p className="text-white/70 text-xs font-semibold uppercase tracking-wide mb-1">
-                  {lang === 'ar' ? 'رواتب غير مدفوعة' : 'Unpaid Salaries'}
-                </p>
-                <p className="text-4xl font-black text-white">{salaries.unpaidCount}</p>
-                {totalUnpaidIQD > 0 && (
-                  <p className="text-white/80 text-sm font-medium mt-0.5">
-                    {fmtIQD(totalUnpaidIQD)}
-                    <span className="text-white/60 text-xs"> ≈ {fmtUSD(totalUnpaidIQD / rate)}</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Pending contractors */}
-              {totalContractorsIQD > 0 && (
-                <div className="pt-3 border-t border-white/20">
-                  <p className="text-white/70 text-xs">
-                    {lang === 'ar' ? 'مقاولون معلقة: ' : 'Contractors pending: '}
-                    <span className="font-bold text-white">{fmtIQD(totalContractorsIQD)}</span>
-                  </p>
-                </div>
-              )}
+      {/* ── Detail Modal ──────────────────────────────────────── */}
+      <Modal open={!!detailProject} onClose={() => setDetailProject(null)} title={detailProject?.name_ar} size="lg">
+        {detailProject && (
+          <div className="space-y-4">
+            <StageTracker stage={detailProject.stage} />
+            <div className="grid sm:grid-cols-2 gap-3 text-sm">
+              <Info label={t(lang,'location')} value={detailProject.location} />
+              <Info label={t(lang,'startDate')} value={detailProject.start_date?.slice(0,10)} />
+              <Info label={t(lang,'budget')} value={detailProject.budget ? `${Number(detailProject.budget).toLocaleString()} ${t(lang,'currency')}` : '—'} />
+              <Info label={t(lang,'progress')} value={`${detailProject.progress}%`} />
+              <Info label={t(lang,'engineer')} value={detailProject.engineer_name_ar||detailProject.engineer_name} />
             </div>
-          </div>
-        </Link>
-
-        {/* Card 4 — Warehouse */}
-        <Link to="/warehouse" className="group h-full">
-          <div className={`relative overflow-hidden rounded-3xl p-6 shadow-lg transition-all hover:-translate-y-0.5 h-full
-            ${hasWarehouseAlert
-              ? 'bg-gradient-to-br from-red-500 to-rose-700 shadow-red-200 hover:shadow-red-300'
-              : 'bg-gradient-to-br from-indigo-500 to-indigo-700 shadow-indigo-200 hover:shadow-indigo-300'
-            }`}>
-            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full" />
-            <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full" />
-
-            <div className="relative">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl">🏭</div>
-                <span className="text-white/80 text-xs font-medium bg-white/10 px-2 py-1 rounded-full">
-                  {lang === 'ar' ? 'المخزن' : 'Warehouse'}
-                </span>
-              </div>
-
-              <p className="text-5xl font-black text-white mb-1">{materials.total}</p>
-              <p className="text-white/80 font-medium">{lang === 'ar' ? 'مادة في المخزن' : 'Materials'}</p>
-
-              {/* Low stock warning */}
-              {materials.lowStock > 0 ? (
-                <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                  <span className="text-xl">⚠️</span>
-                  <p className="text-white font-bold text-sm">
-                    {materials.lowStock} {lang === 'ar' ? 'مواد وصلت للحد الأدنى!' : 'materials at low stock!'}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-3 pt-3 border-t border-white/20 flex items-center gap-2">
-                  <span className="text-lg">✅</span>
-                  <p className="text-white/80 text-sm">{lang === 'ar' ? 'المخزون سليم' : 'Stock levels OK'}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      {/* ── Bottom panels ─────────────────────────────────────────────────── */}
-      <div className="grid lg:grid-cols-2 gap-5">
-
-        {/* Projects by stage */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <span>📊</span>
-            {lang === 'ar' ? 'المشاريع حسب المرحلة' : 'Projects by Stage'}
-          </h2>
-          {projectsByStage.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">{t(lang, 'noData')}</p>
-          ) : (
-            <div className="space-y-3">
-              {projectsByStage.map(row => (
-                <div key={row.stage} className="flex items-center gap-3">
-                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${STAGE_CLR[row.stage] || 'bg-slate-400'}`} />
-                  <span className="text-sm text-slate-600 w-20 flex-shrink-0">{t(lang, `stages.${row.stage}`)}</span>
-                  <div className="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${STAGE_CLR[row.stage] || 'bg-slate-400'}`}
-                      style={{ width: activeProjects ? `${(row.count / activeProjects) * 100}%` : '0%' }}
-                    />
+            <div>
+              <h3 className="font-bold text-slate-700 mb-3">{t(lang,'tasks')}</h3>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {detailProject.tasks?.map(task => (
+                  <div key={task.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50">
+                    <input type="checkbox" checked={task.completed} onChange={() => canEdit && toggleTask(task)} disabled={!canEdit} className="w-4 h-4 accent-blue-600" />
+                    <span className={`flex-1 text-sm ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.task_name}</span>
+                    {canEdit && <button onClick={() => deleteTask(task.id)} className="text-red-400 hover:text-red-600 text-xs">✕</button>}
                   </div>
-                  <span className="text-sm font-bold text-slate-700 w-6 text-center">{row.count}</span>
+                ))}
+                {detailProject.tasks?.length === 0 && <p className="text-slate-400 text-sm">{t(lang,'noData')}</p>}
+              </div>
+              {canEdit && (
+                <div className="flex gap-2 mt-3">
+                  <input value={newTask} onChange={e=>setNewTask(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addTask()} placeholder={t(lang,'addTask')} className="input flex-1 text-sm" />
+                  <button onClick={addTask} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">+</button>
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <span>🕐</span>
-            {t(lang, 'recentActivity')}
-          </h2>
-          {recentActivity.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-8">{t(lang, 'noData')}</p>
-          ) : (
-            <div className="space-y-2 max-h-72 overflow-y-auto">
-              {recentActivity.map(a => (
-                <div key={a.id} className="flex items-start gap-3 text-sm p-2 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 ${A_COLOR[a.action] || 'bg-slate-100 text-slate-500'}`}>
-                    {A_ICON[a.action] || '📝'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-slate-700 leading-tight">{a.description}</p>
-                    <p className="text-slate-400 text-xs mt-0.5">
-                      {a.user_name} · {new Date(a.created_at).toLocaleString(lang === 'ar' ? 'ar-IQ' : 'en-US', { dateStyle: 'short', timeStyle: 'short' })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
+
+function StatCard({ icon, label, value, color }) {
+  const colors = {
+    blue:   'bg-blue-50   border-blue-100   text-blue-700',
+    emerald:'bg-emerald-50 border-emerald-100 text-emerald-700',
+    amber:  'bg-amber-50  border-amber-100  text-amber-700',
+    red:    'bg-red-50    border-red-100    text-red-700',
+    indigo: 'bg-indigo-50 border-indigo-100 text-indigo-700',
+    slate:  'bg-slate-50  border-slate-100  text-slate-700',
+  };
+  return (
+    <div className={`rounded-2xl border p-4 ${colors[color] || colors.slate}`}>
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-lg">{icon}</span>
+        <span className="text-xs font-semibold opacity-70">{label}</span>
+      </div>
+      <p className="text-xl font-black">{value}</p>
+    </div>
+  );
+}
+function Field({label,children,required}){return <div><label className="block text-sm font-semibold text-slate-700 mb-1.5">{label}{required&&<span className="text-red-500 ms-1">*</span>}</label>{children}</div>;}
+function Info({label,value}){return <div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-400 mb-0.5">{label}</p><p className="font-semibold text-slate-700">{value||'—'}</p></div>;}
